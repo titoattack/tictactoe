@@ -9,7 +9,11 @@ fn main() {
 	let (mut game_finished, mut winner) = current_game.check_endgame();
 
 	while !game_finished {
-		current_game.push_move(user_interface::get_user_move());
+		if current_game.x_turn {
+			current_game.push_move(user_interface::get_user_move());
+		} else {
+			backend::minimax_algo(&mut current_game, 9, -2, 2);
+		}
 		current_game.print_board();
 		(game_finished, winner) = current_game.check_endgame();
 	}

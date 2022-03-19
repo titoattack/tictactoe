@@ -1,3 +1,5 @@
+use std::cmp;
+
 pub struct Game {
 	pub board: [i8; 9],
 	pub x_turn: bool,
@@ -104,10 +106,10 @@ impl Game {
 		(finished_game, winner)
 	}
 
-	pub fn evaluation(&self) -> i8 {
-		let (_, winner) = self.check_endgame();
-		winner
-	}
+//	pub fn evaluation(&self) -> i8 {
+//		let (_, winner) = self.check_endgame();
+//		winner
+//	}
 }	
 
 
@@ -126,3 +128,69 @@ pub const WINNING_PATTERNS: [[usize; 3]; 8] = [[0, 3, 6], [1, 4, 7], [2, 5, 8],
 					   							[0, 1, 2], [3, 4, 5], [6, 7, 8],
 												[0, 4, 8], [2, 4, 6]];
 
+//Search algorithm
+pub fn minimax_algo(game: &mut Game, depth: i32, alpha: i32, beta: i32) {
+	fn minimax(game: &mut Game, depth: i32, mut alpha: i32, mut beta: i32) -> (i32, usize) {
+		let (finished_game, winner) = game.check_endgame();
+		if depth == 0 || finished_game {
+			return (winner.into(), 9) //9 = No move to be made
+		}
+
+		if game.x_turn {
+			let mut max_eval = -2;
+			let mut best_move = 9;
+
+			for mover in 0..9 {
+				if game.available_moves[mover] {
+					game.push_move(mover);
+					let (eval, _) = minimax(game, depth -1, alpha, beta);
+					if max_eval != cmp::max(max_eval, eval) {
+						max_eval = cmp::max(max_eval, eval);
+						best_move = mover;
+					}
+					game.takeback_move();
+					alpha = cmp::max(alpha, eval);
+					if beta <= alpha {
+						break;
+					}
+				} else {
+					//Move is not available
+					continue;
+				}
+			}
+				
+			return (max_eval, best_move);
+		} else {
+			let mut min_eval = 2;
+			let mut best_move = 9;
+
+			for mover in 0..9 {
+				if game.available_moves[mover] {
+					game.push_move(mover);
+					let (eval, _) = minimax(game, depth -1, alpha, beta);
+					if min_eval != cmp::min(min_eval, eval) {
+						min_eval = cmp::min(min_eval, eval);
+						best_move = mover;
+					}
+					game.takeback_move();
+					beta = cmp::min(beta, eval);
+					if beta <= alpha {
+						break;
+					}
+				} else {
+					//Move is not available
+					continue;
+				}
+			}
+				
+			return (min_eval, best_move);
+		}
+	}
+
+	let (_valuation, best_move) = minimax(game, depth, alpha, beta);
+	match best_move {
+		0..=8 => game.push_move(best_move),
+		9..=std::usize::MAX => false,
+		_ => false,
+	};
+}
